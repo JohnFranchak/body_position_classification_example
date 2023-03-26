@@ -1,5 +1,4 @@
 #Takes as input a dataframe "ds_t" of behavioral code, time (as a datetime object), and variable number of sensor/axis dimensions,
-# and a paramater "who" that refers to "parent" or "infant" as string to adjust the sensor naming and math to the appropriate set
 
 motion_features <- function(ds_t, who = "infant", complete = T) {
   require(psych)
@@ -9,18 +8,13 @@ motion_features <- function(ds_t, who = "infant", complete = T) {
   #Figure out coded behavior and time for window
   code <- ds_t %>% select(code)
   code_out <- ds_t %>% count(code, sort = T) %>% slice_head() %>% mutate(code_prop = n/nrow(ds_t)) %>% select(-n)
-  # code_out$time <- median(ds_t_t$time_compressed, na.rm = T)
-  # code_out$time_from <- median(ds_t$time_compressed, na.rm = T)
-  # code_out$time_to <- median(ds_t$time_compressed, na.rm = T)
   code_out$time <- median(ds_t$time, na.rm = T)
   code_out$time_from <- min(ds_t$time, na.rm = T)
   code_out$time_to <- max(ds_t$time, na.rm = T)
   print(code_out)
   
   #Create a subset of data with only the sensor data
-  # mot <- ds_t %>% select(-time, -code, -time_compressed)
   mot <- ds_t %>% select(-time, -code)
-  
   
   #Create a list of summary stats and apply individual to every sensor
   na_mean <- function(x) mean(x, na.rm = T) 
@@ -45,15 +39,7 @@ motion_features <- function(ds_t, who = "infant", complete = T) {
     diff34 <- function(x)  mean(pull(x, 3) - pull(x,4), na.rm = T)
     
     #Calculate summaries across axes for each sensor
-    if (who == "parent") {
-      sensor_features <- list(wacc = select(ds_t, starts_with("wacc")), 
-                              hacc = select(ds_t, starts_with("hacc")), 
-                              wgyr = select(ds_t, starts_with("wgyr")), 
-                              hgyr = select(ds_t, starts_with("hgyr")))
-      
-    }
-    if (who == "infant") {
-      sensor_features <- list(lhacc = select(ds_t, starts_with("lhacc")), 
+    sensor_features <- list(lhacc = select(ds_t, starts_with("lhacc")), 
                               laacc = select(ds_t, starts_with("laacc")), 
                               lhgyr = select(ds_t, starts_with("lhgyr")), 
                               lagyr = select(ds_t, starts_with("lagyr")),
@@ -61,8 +47,6 @@ motion_features <- function(ds_t, who = "infant", complete = T) {
                               raacc = select(ds_t, starts_with("raacc")), 
                               rhgyr = select(ds_t, starts_with("rhgyr")), 
                               ragyr = select(ds_t, starts_with("ragyr")))
-      
-    }
     sensor_names <- names(sensor_features)
     
     correlate_robust <- function(data, prefix) {
@@ -124,30 +108,21 @@ motion_features <- function(ds_t, who = "infant", complete = T) {
     abscorrs <- map_dfc(cross_features, ~ .x %>% mutate(across(everything(), abs)) %>% correlate(use = "pairwise.complete.obs") %>% stretch(na.rm = T, remove.dups = T) %>% pivot_wider(names_from = c("x","y"), names_prefix = "ABSCORR_", values_from = "r")))
     
     #Get across sensor differences for each axis; two sensors (and 1 diff) for parent vs 4 (and 6 diffs) for infants
-    if (who == "parent") {
-      diff_fx <- c("DIFF12")
-      suppressMessages(
-        diffs <- map_dfc(cross_features, ~ t(list(diff12 = diff12(.x)))) %>% set_names(simplify(map(cf_names, ~ paste0(diff_fx[seq_along(diff_fx)],"_", .x)))))
-      suppressMessages(
-        absdiffs <-  map_dfc(cross_features, ~ t(list(diff12 = diff12(.x %>% mutate(across(everything(), abs)))))) %>% set_names(simplify(map(cf_names, ~ paste0("ABS",diff_fx[seq_along(diff_fx)],"_", .x)))))
-    }
-    if (who == "infant") {
-      diff_fx <- c("DIFF12", "DIFF13", "DIFF14","DIFF23","DIFF24","DIFF34")
-      suppressMessages(
-        diffs <- map_dfc(cross_features, 
-                              ~ t(list(diff12 = diff12(.x), diff13 = diff13(.x), diff14 = diff14(.x), diff23 = diff23(.x), diff24 = diff24(.x), diff34 = diff34(.x)))) %>% 
-        set_names(simplify(map(cf_names, ~ paste0(diff_fx[seq_along(diff_fx)],"_", .x)))))
-      
-      suppressMessages(
-        absdiffs <-  map_dfc(cross_features, 
-                                  ~ t(list(diff12 = diff12(.x %>% mutate(across(everything(), abs))),
-                                           diff13 = diff13(.x %>% mutate(across(everything(), abs))),
-                                           diff14 = diff14(.x %>% mutate(across(everything(), abs))),
-                                           diff23 = diff23(.x %>% mutate(across(everything(), abs))),
-                                           diff24 = diff24(.x %>% mutate(across(everything(), abs))),
-                                           diff34 = diff34(.x %>% mutate(across(everything(), abs)))))) %>% 
-          set_names(simplify(map(cf_names, ~ paste0("ABS",diff_fx[seq_along(diff_fx)],"_", .x)))))
-    }
+    diff_fx <- c("DIFF12", "DIFF13", "DIFF14","DIFF23","DIFF24","DIFF34")
+    suppressMessages(
+      diffs <- map_dfc(cross_features, 
+                            ~ t(list(diff12 = diff12(.x), diff13 = diff13(.x), diff14 = diff14(.x), diff23 = diff23(.x), diff24 = diff24(.x), diff34 = diff34(.x)))) %>% 
+      set_names(simplify(map(cf_names, ~ paste0(diff_fx[seq_along(diff_fx)],"_", .x)))))
+    
+    suppressMessages(
+      absdiffs <-  map_dfc(cross_features, 
+                                ~ t(list(diff12 = diff12(.x %>% mutate(across(everything(), abs))),
+                                         diff13 = diff13(.x %>% mutate(across(everything(), abs))),
+                                         diff14 = diff14(.x %>% mutate(across(everything(), abs))),
+                                         diff23 = diff23(.x %>% mutate(across(everything(), abs))),
+                                         diff24 = diff24(.x %>% mutate(across(everything(), abs))),
+                                         diff34 = diff34(.x %>% mutate(across(everything(), abs)))))) %>% 
+        set_names(simplify(map(cf_names, ~ paste0("ABS",diff_fx[seq_along(diff_fx)],"_", .x)))))
     
     bind_cols(code_out, mot_features, sensor_sums, sensor_abssums, sensor_corrs, sensor_abscorrs, sensor_diffs, sensor_absdiffs, sums, abssums, corrs, abscorrs, diffs, absdiffs)
     } else

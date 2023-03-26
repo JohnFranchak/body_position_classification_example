@@ -80,6 +80,10 @@ end_filt <- force_tz(as_datetime(end_time), "America/Los_Angeles")
 
 ds_coded <-ds %>% filter_by_time(time, .start_date = start_filt, .end_date = end_filt)
 
+# One single window for testing
+# ds_t <- ds %>% filter_by_time(time, "2022-06-14 09:29:00", "2022-06-14 09:29:04") # to get a single window
+
+
 # MOTION FEATURES ------
 # sliding 4 second windows every 1 second
 slide <- slide_period_dfr(ds, 
@@ -91,5 +95,5 @@ slide <- slide_period_dfr(ds,
                           .complete = TRUE,
                           ~ motion_features(.x))
 
-save(slide, session_param, file = here("synced_data", "mot_features.RData"))
+save(slide, file = here("synced_data", "mot_features.RData"))
 
