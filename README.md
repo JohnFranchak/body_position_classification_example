@@ -4,4 +4,4 @@ The folder "imu" contains acceleration and gyroscope data for each of the four s
 
 Please cite the publication of record if you use data or code in your own project. The best current citation for this work is:
 
-Franchak, J. M., Tang, M., Rousey, H., & Luo, C. (2023). Long-form recording of infant body position in the home using wearable inertial sensors. Manuscript under review.
+Franchak, J. M., Tang, M., Rousey, H., & Luo, C. (2023). Long-form recording of infant body position in the home using wearable inertial sensors. Manuscript to appear in _Behavior Research Methods_
